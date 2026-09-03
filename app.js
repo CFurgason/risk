@@ -1,6 +1,8 @@
 (function () {
   const SHEET_ID = "1-l0LXj6Mt7e73YdWcLGqRRLwR34GtrbnBWo6e-O3_qM";
   const GID = "0";
+  const PUBLISHED_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRy-PgUzwkSJEPM7qGAou8yec7HoLZ3N31rTmtyzK6CIl5U0VQqjFh-nD9kfy8MlNGY2LyUSKUdYNYD/pub?gid=0&single=true&output=csv";
+  const LOCAL_CSV_PATH = "shop-risk-data.csv";
   const REFRESH_MS = 15 * 60 * 1000;
   const TIERS = ["Small", "Medium", "Large"];
   const STATUS_ORDER = ["Green", "Yellow", "Orange", "Red", "No Revenue Activity", "Insufficient Data"];
@@ -37,28 +39,69 @@
     window.setInterval(loadSheet, REFRESH_MS);
   });
 
-  function loadSheet() {
-    setStatus("Loading latest Google Sheet data through direct Visualization API...", false);
+  async function loadSheet() {
+    setStatus("Loading latest Google Sheet data...", false);
+    try {
+      const parsed = await loadPublishedCsv();
+      ingestRows(parsed.rows, parsed.columns, "Published Google Sheet CSV");
+    } catch (publishedCsvError) {
+      try {
+        const parsed = await loadGoogleSheet();
+        ingestRows(parsed.rows, parsed.columns, "Google Sheet Visualization API", [`Published CSV request failed first: ${publishedCsvError.message}`]);
+      } catch (googleError) {
+        try {
+          setStatus("Google Sheet did not respond. Trying daily local CSV...", true);
+        const parsed = await loadLocalCsv();
+          ingestRows(parsed.rows, parsed.columns, LOCAL_CSV_PATH, [
+            `Published CSV request failed first: ${publishedCsvError.message}`,
+            `Visualization API request failed second: ${googleError.message}`
+          ]);
+        } catch (csvError) {
+          setStatus("No live data loaded. Check the published CSV URL or place shop-risk-data.csv next to this dashboard.", true);
+          state.diagnostics = [
+            `Published CSV error: ${publishedCsvError.message}`,
+            `Visualization API error: ${googleError.message}`,
+            `Local CSV error: ${csvError.message}`,
+            `Expected local daily CSV path: ${LOCAL_CSV_PATH}`
+          ];
+          $("diagnostics").textContent = state.diagnostics.join("\n");
+        }
+      }
+    }
+  }
+
+  async function loadPublishedCsv() {
+    setStatus("Loading latest published Google Sheet CSV...", false);
+    const response = await fetch(`${PUBLISHED_CSV_URL}&cacheBust=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Published CSV returned ${response.status}.`);
+    const text = await response.text();
+    if (!text.trim()) throw new Error("Published CSV response was empty.");
+    if (/^\s*</.test(text)) throw new Error("Published CSV returned HTML instead of CSV.");
+    return parseCsv(text);
+  }
+
+  function loadGoogleSheet() {
+    return new Promise((resolve, reject) => {
+      setStatus("Loading latest Google Sheet data through direct Visualization API...", false);
     const callbackName = "__shopRiskSheet_" + Date.now();
     const script = document.createElement("script");
     const timeout = window.setTimeout(() => {
       cleanup();
-      setStatus("Google Sheet did not respond. Use CSV fallback if the sheet is private or blocked by the browser.", true);
-    }, 20000);
+        reject(new Error("Google Sheet did not respond within 12 seconds."));
+      }, 12000);
 
     window[callbackName] = (payload) => {
       cleanup();
       try {
-        const parsed = parseGooglePayload(payload);
-        ingestRows(parsed.rows, parsed.columns, "Google Sheet");
+          resolve(parseGooglePayload(payload));
       } catch (error) {
-        setStatus(error.message, true);
+          reject(error);
       }
     };
 
     script.onerror = () => {
       cleanup();
-      setStatus("Could not load the Google Sheet endpoint. Check sharing settings or use CSV fallback.", true);
+        reject(new Error("Could not load the Google Sheet endpoint. The sheet may be private or blocked."));
     };
 
     script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}&tqx=out:json;responseHandler:${callbackName}&cacheBust=${Date.now()}`;
@@ -69,6 +112,15 @@
       delete window[callbackName];
       script.remove();
     }
+    });
+  }
+
+  async function loadLocalCsv() {
+    const response = await fetch(`${LOCAL_CSV_PATH}?cacheBust=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Could not load ${LOCAL_CSV_PATH} (${response.status}).`);
+    const text = await response.text();
+    if (!text.trim()) throw new Error(`${LOCAL_CSV_PATH} is empty.`);
+    return parseCsv(text);
   }
 
   function handleCsvUpload(event) {
@@ -82,10 +134,10 @@
     reader.readAsText(file);
   }
 
-  function ingestRows(rawRows, columns, sourceName) {
+  function ingestRows(rawRows, columns, sourceName, prependedDiagnostics = []) {
     state.columns = columns;
     state.mapping = mapColumns(columns);
-    state.diagnostics = [];
+    state.diagnostics = [...prependedDiagnostics];
     const missing = Object.entries(state.mapping).filter(([, value]) => !value).map(([key]) => key);
     if (missing.length) {
       state.diagnostics.push(`Missing expected columns: ${missing.join(", ")}`);

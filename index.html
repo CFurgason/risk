@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shop Risk Monitor</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Daily-updated Google Sheet source</p>
+        <h1>Shop Risk Monitor</h1>
+      </div>
+      <div class="actions">
+        <button id="refreshBtn" type="button" title="Refresh sheet data">Refresh</button>
+        <label class="fileBtn" title="Use when browser access to the sheet is blocked">
+          CSV fallback
+          <input id="csvInput" type="file" accept=".csv,text/csv" />
+        </label>
+      </div>
+    </header>
+
+    <main>
+      <section class="statusBand" id="statusBand">
+        <span id="sourceStatus">Loading latest sheet data...</span>
+        <span id="lastUpdated"></span>
+      </section>
+
+      <section class="controls" aria-label="Dashboard controls">
+        <label>
+          Anchor date
+          <input id="anchorDate" type="date" />
+        </label>
+        <label>
+          Recent trend weeks
+          <input id="recentWeeks" type="number" min="2" max="12" value="4" />
+        </label>
+        <label>
+          Baseline weeks
+          <input id="baselineWeeks" type="number" min="4" max="24" value="8" />
+        </label>
+        <label>
+          Weak-week threshold
+          <input id="weakThreshold" type="number" min="-3" max="0" step="0.1" value="-0.25" />
+        </label>
+      </section>
+
+      <section class="scorecards" aria-label="Summary scorecards">
+        <article>
+          <span>At or Above Peers</span>
+          <strong id="peerShare">--</strong>
+          <small>Green + Yellow share, rolling 6 months</small>
+        </article>
+        <article>
+          <span>Average Abs. Deviation</span>
+          <strong id="avgAbsDeviation">--</strong>
+          <small>Composite z-score distance</small>
+        </article>
+        <article>
+          <span>Currently Declining</span>
+          <strong id="decliningCount">--</strong>
+          <small>2+ consecutive weak weeks</small>
+        </article>
+        <article>
+          <span>Rows Loaded</span>
+          <strong id="rowsLoaded">--</strong>
+          <small id="windowLabel">Current month and trailing 6 months</small>
+        </article>
+      </section>
+
+      <section class="riskTiles" aria-label="Risk status counts">
+        <article class="tile green"><span>Green</span><strong id="greenCount">0</strong></article>
+        <article class="tile yellow"><span>Yellow</span><strong id="yellowCount">0</strong></article>
+        <article class="tile orange"><span>Orange</span><strong id="orangeCount">0</strong></article>
+        <article class="tile red"><span>Red</span><strong id="redCount">0</strong></article>
+        <article class="tile neutral"><span>No Revenue</span><strong id="noRevenueCount">0</strong></article>
+        <article class="tile neutral"><span>Insufficient</span><strong id="insufficientCount">0</strong></article>
+      </section>
+
+      <section class="decliningPanel">
+        <div class="sectionHeader">
+          <h2>Shops Currently Declining</h2>
+          <p>Self-relative trend signal, separate from peer risk status.</p>
+        </div>
+        <div id="decliningList" class="decliningList"></div>
+      </section>
+
+      <section class="panel">
+        <div class="sectionHeader">
+          <h2>Current Month Peer Risk</h2>
+          <p id="currentMonthNote">Computed only from current calendar month records.</p>
+        </div>
+        <div id="currentTables"></div>
+      </section>
+
+      <section class="panel">
+        <div class="sectionHeader">
+          <h2>Rolling 6-Month Peer Risk</h2>
+          <p>Computed from the trailing 6-month window. Size tiers are also derived from this window.</p>
+        </div>
+        <div id="rollingTables"></div>
+      </section>
+
+      <section class="panel">
+        <div class="sectionHeader">
+          <h2>Monthly Composite Trends</h2>
+          <p>Composite z-score by shop, grouped by size tier.</p>
+        </div>
+        <div id="trendCharts" class="trendGrid"></div>
+      </section>
+
+      <section class="panel diagnostics">
+        <div class="sectionHeader">
+          <h2>Diagnostics</h2>
+          <p>Column matching, source access, and calculation warnings.</p>
+        </div>
+        <pre id="diagnostics"></pre>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

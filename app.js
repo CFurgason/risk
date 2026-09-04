@@ -455,7 +455,7 @@
 
   function tableHtml(containerId, rows) {
     const headers = [
-      ["shop", "Shop"], ["status", "Risk"], ["calls", "Calls"], ["connectRate", "Connect Rate"],
+      ["shop", "Shop"], ["status", "Risk"], ["connectRate", "Connect Rate"],
       ["connectZ", "Connect Z"], ["revenue", "Revenue"], ["revenuePerCall", "Rev / Call"],
       ["revenueZ", "Revenue Z"], ["composite", "Composite"], ["compositeDelta", "Current - 6M"],
       ["decline", "Decline"]
@@ -466,10 +466,9 @@
           <thead><tr>${headers.map(([key, label]) => `<th data-key="${key}">${label}</th>`).join("")}</tr></thead>
           <tbody>
             ${rows.map((row) => `
-              <tr>
+                <tr>
                 <td>${escapeHtml(row.shop)}</td>
                 <td><span class="status ${statusClass(row.status)}">${row.status}</span></td>
-                <td>${row.calls.toLocaleString()}</td>
                 <td>${row.connectRate == null ? "--" : pct(row.connectRate)}</td>
                 <td>${fmt(row.connectZ)}</td>
                 <td>${money(row.revenue)}</td>

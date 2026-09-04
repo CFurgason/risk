@@ -29,7 +29,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  min-width: 3200px;
+  min-width: 2850px;
   padding: 24px 32px;
   background: #ffffff;
   border-bottom: 1px solid var(--line);
@@ -59,7 +59,7 @@ h2 {
 }
 
 main {
-  width: 3200px;
+  width: 2850px;
   max-width: none;
   margin: 0 auto;
   padding: 24px 28px 48px;
@@ -280,7 +280,7 @@ input {
 
 table {
   width: 100%;
-  min-width: 1500px;
+  min-width: 1325px;
   border-collapse: collapse;
   font-size: 19px;
 }

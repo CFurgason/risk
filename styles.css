@@ -221,6 +221,13 @@ input {
   overflow: hidden;
 }
 
+.peerRiskGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
 .sectionHeader {
   display: flex;
   align-items: baseline;
@@ -407,5 +414,9 @@ pre {
   .scorecards,
   .riskTiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .peerRiskGrid {
+    grid-template-columns: 1fr;
   }
 }

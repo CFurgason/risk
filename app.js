@@ -268,7 +268,7 @@
 
     $("currentMonthNote").textContent = `Current month: ${formatDate(currentStart)} through ${formatDate(addDays(nextMonth, -1))}; rolling window: ${formatDate(rollingStart)} through ${formatDate(anchor)}.`;
     $("windowLabel").textContent = `${formatDate(currentStart)} current month; ${formatDate(rollingStart)} to ${formatDate(anchor)} rolling window`;
-    renderSummary(rolling, decline);
+    renderSummary(current, rolling, decline);
     renderDecliningList(decline);
     renderPeerRiskTables(current.metrics, rolling.metrics);
     renderTrends(anchor, tierMap);
@@ -384,7 +384,7 @@
     return connect + revenueScale / 10;
   }
 
-  function renderSummary(rolling, decline) {
+  function renderSummary(current, rolling, decline) {
     const valid = rolling.metrics.filter((item) => item.status !== "Insufficient Data" && item.status !== "No Revenue Activity");
     const atOrAbove = valid.filter((item) => item.status === "Green" || item.status === "Yellow").length;
     const avgAbs = valid.length ? valid.reduce((sum, item) => sum + Math.abs(item.composite || 0), 0) / valid.length : null;
@@ -394,7 +394,7 @@
     $("rowsLoaded").textContent = state.rows.length.toLocaleString();
 
     const counts = Object.fromEntries(STATUS_ORDER.map((status) => [status, 0]));
-    rolling.metrics.forEach((item) => counts[item.status] += 1);
+    current.metrics.forEach((item) => counts[item.status] += 1);
     $("greenCount").textContent = counts.Green;
     $("yellowCount").textContent = counts.Yellow;
     $("orangeCount").textContent = counts.Orange;

@@ -1,6 +1,9 @@
 (function () {
   const SHEET_ID = "1-l0LXj6Mt7e73YdWcLGqRRLwR34GtrbnBWo6e-O3_qM";
   const GID = "0";
+  const PUBLISHED_ID = "2PACX-1vRy-PgUzwkSJEPM7qGAou8yec7HoLZ3N31rTmtyzK6CIl5U0VQqjFh-nD9kfy8MlNGY2LyUSKUdYNYD";
+  const PUBLISHED_GVIZ_URL = `https://docs.google.com/spreadsheets/d/e/${PUBLISHED_ID}/gviz/tq?gid=${GID}`;
+  const DIRECT_GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}`;
   const PUBLISHED_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRy-PgUzwkSJEPM7qGAou8yec7HoLZ3N31rTmtyzK6CIl5U0VQqjFh-nD9kfy8MlNGY2LyUSKUdYNYD/pub?gid=0&single=true&output=csv";
   const LOCAL_CSV_PATH = "shop-risk-data.csv";
   const REFRESH_MS = 15 * 60 * 1000;
@@ -41,33 +44,42 @@
 
   async function loadSheet() {
     setStatus("Loading latest Google Sheet data...", false);
-    try {
-      const parsed = await loadPublishedCsv();
-      ingestRows(parsed.rows, parsed.columns, "Published Google Sheet CSV");
-    } catch (publishedCsvError) {
+    const attempts = [
+      {
+        name: "Published Google Sheet",
+        load: () => loadGoogleSheet(PUBLISHED_GVIZ_URL, "published Google Sheet")
+      },
+      {
+        name: "Shared Google Sheet",
+        load: () => loadGoogleSheet(DIRECT_GVIZ_URL, "shared Google Sheet")
+      },
+      {
+        name: "Published Google Sheet CSV",
+        load: () => loadPublishedCsv()
+      },
+      {
+        name: LOCAL_CSV_PATH,
+        load: () => loadLocalCsv()
+      }
+    ];
+    const failures = [];
+
+    for (const attempt of attempts) {
       try {
-        const parsed = await loadGoogleSheet();
-        ingestRows(parsed.rows, parsed.columns, "Google Sheet Visualization API", [`Published CSV request failed first: ${publishedCsvError.message}`]);
-      } catch (googleError) {
-        try {
-          setStatus("Google Sheet did not respond. Trying daily local CSV...", true);
-        const parsed = await loadLocalCsv();
-          ingestRows(parsed.rows, parsed.columns, LOCAL_CSV_PATH, [
-            `Published CSV request failed first: ${publishedCsvError.message}`,
-            `Visualization API request failed second: ${googleError.message}`
-          ]);
-        } catch (csvError) {
-          setStatus("No live data loaded. Check the published CSV URL or place shop-risk-data.csv next to this dashboard.", true);
-          state.diagnostics = [
-            `Published CSV error: ${publishedCsvError.message}`,
-            `Visualization API error: ${googleError.message}`,
-            `Local CSV error: ${csvError.message}`,
-            `Expected local daily CSV path: ${LOCAL_CSV_PATH}`
-          ];
-          $("diagnostics").textContent = state.diagnostics.join("\n");
-        }
+        const parsed = await attempt.load();
+        ingestRows(parsed.rows, parsed.columns, attempt.name, failures.map((failure) => `${failure.name} failed: ${failure.message}`));
+        return;
+      } catch (error) {
+        failures.push({ name: attempt.name, message: error.message });
       }
     }
+
+    setStatus("No live data loaded. Check the published Google Sheet URL or place shop-risk-data.csv next to this dashboard.", true);
+    state.diagnostics = [
+      ...failures.map((failure) => `${failure.name} failed: ${failure.message}`),
+      `Expected local daily CSV path: ${LOCAL_CSV_PATH}`
+    ];
+    $("diagnostics").textContent = state.diagnostics.join("\n");
   }
 
   async function loadPublishedCsv() {
@@ -80,38 +92,38 @@
     return parseCsv(text);
   }
 
-  function loadGoogleSheet() {
+  function loadGoogleSheet(baseUrl, label) {
     return new Promise((resolve, reject) => {
-      setStatus("Loading latest Google Sheet data through direct Visualization API...", false);
-    const callbackName = "__shopRiskSheet_" + Date.now();
-    const script = document.createElement("script");
-    const timeout = window.setTimeout(() => {
-      cleanup();
-        reject(new Error("Google Sheet did not respond within 12 seconds."));
+      setStatus(`Loading latest data from ${label}...`, false);
+      const callbackName = "__shopRiskSheet_" + Date.now();
+      const script = document.createElement("script");
+      const timeout = window.setTimeout(() => {
+        cleanup();
+        reject(new Error(`${label} did not respond within 12 seconds.`));
       }, 12000);
 
-    window[callbackName] = (payload) => {
-      cleanup();
-      try {
+      window[callbackName] = (payload) => {
+        cleanup();
+        try {
           resolve(parseGooglePayload(payload));
-      } catch (error) {
+        } catch (error) {
           reject(error);
+        }
+      };
+
+      script.onerror = () => {
+        cleanup();
+        reject(new Error(`Could not load ${label}. The sheet may be private or blocked.`));
+      };
+
+      script.src = `${baseUrl}&tqx=responseHandler:${callbackName};out:json&cacheBust=${Date.now()}`;
+      document.head.appendChild(script);
+
+      function cleanup() {
+        window.clearTimeout(timeout);
+        delete window[callbackName];
+        script.remove();
       }
-    };
-
-    script.onerror = () => {
-      cleanup();
-        reject(new Error("Could not load the Google Sheet endpoint. The sheet may be private or blocked."));
-    };
-
-    script.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}&tqx=out:json;responseHandler:${callbackName}&cacheBust=${Date.now()}`;
-    document.head.appendChild(script);
-
-    function cleanup() {
-      window.clearTimeout(timeout);
-      delete window[callbackName];
-      script.remove();
-    }
     });
   }
 
@@ -254,12 +266,11 @@
       item.decline = decline.get(item.shop) || null;
     });
 
-    $("currentMonthNote").textContent = `Computed from ${formatDate(currentStart)} through ${formatDate(addDays(nextMonth, -1))}.`;
+    $("currentMonthNote").textContent = `Current month: ${formatDate(currentStart)} through ${formatDate(addDays(nextMonth, -1))}; rolling window: ${formatDate(rollingStart)} through ${formatDate(anchor)}.`;
     $("windowLabel").textContent = `${formatDate(currentStart)} current month; ${formatDate(rollingStart)} to ${formatDate(anchor)} rolling window`;
     renderSummary(rolling, decline);
     renderDecliningList(decline);
-    renderTables("currentTables", current.metrics);
-    renderTables("rollingTables", rolling.metrics);
+    renderPeerRiskTables(current.metrics, rolling.metrics);
     renderTrends(anchor, tierMap);
     renderDiagnostics(current, rolling, tierMap);
   }
@@ -408,23 +419,36 @@
     `).join("");
   }
 
-  function renderTables(containerId, metrics) {
-    const container = $(containerId);
+  function renderPeerRiskTables(currentMetrics, rollingMetrics) {
+    const container = $("peerRiskTables");
     container.innerHTML = TIERS.map((tier) => {
-      const rows = sortRows(containerId, metrics.filter((item) => item.tier === tier));
+      const currentContainerId = `currentTables-${tier}`;
+      const rollingContainerId = `rollingTables-${tier}`;
+      const currentRows = sortRows(currentContainerId, currentMetrics.filter((item) => item.tier === tier));
+      const rollingRows = sortRows(rollingContainerId, rollingMetrics.filter((item) => item.tier === tier));
       return `
         <div class="tierBlock">
-          <div class="tierTitle"><span>${tier} shops</span><span>${rows.length} shops</span></div>
-          ${rows.length ? tableHtml(containerId, rows) : '<p class="empty">No shops in this tier.</p>'}
+          <div class="tierTitle"><span>${tier} shops</span><span>${Math.max(currentRows.length, rollingRows.length)} shops</span></div>
+          <div class="peerRiskGrid">
+            <div class="peerRiskColumn" data-table-id="${currentContainerId}">
+              <h3>Current Month</h3>
+              ${currentRows.length ? tableHtml(currentContainerId, currentRows) : '<p class="empty">No shops in this tier.</p>'}
+            </div>
+            <div class="peerRiskColumn" data-table-id="${rollingContainerId}">
+              <h3>Rolling 6-Month</h3>
+              ${rollingRows.length ? tableHtml(rollingContainerId, rollingRows) : '<p class="empty">No shops in this tier.</p>'}
+            </div>
+          </div>
         </div>
       `;
     }).join("");
-    container.querySelectorAll("th[data-key]").forEach((th) => {
+    container.querySelectorAll(".peerRiskColumn th[data-key]").forEach((th) => {
       th.addEventListener("click", () => {
         const key = th.getAttribute("data-key");
+        const containerId = th.closest(".peerRiskColumn").getAttribute("data-table-id");
         const current = state.sort[containerId] || {};
         state.sort[containerId] = { key, dir: current.key === key && current.dir === "asc" ? "desc" : "asc" };
-        renderTables(containerId, metrics);
+        renderPeerRiskTables(currentMetrics, rollingMetrics);
       });
     });
   }

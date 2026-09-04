@@ -86,23 +86,13 @@
         <div id="decliningList" class="decliningList"></div>
       </section>
 
-      <div class="peerRiskGrid">
-        <section class="panel">
-          <div class="sectionHeader">
-            <h2>Current Month Peer Risk</h2>
-            <p id="currentMonthNote">Computed only from current calendar month records.</p>
-          </div>
-          <div id="currentTables"></div>
-        </section>
-
-        <section class="panel">
-          <div class="sectionHeader">
-            <h2>Rolling 6-Month Peer Risk</h2>
-            <p>Computed from the trailing 6-month window. Size tiers are also derived from this window.</p>
-          </div>
-          <div id="rollingTables"></div>
-        </section>
-      </div>
+      <section class="panel">
+        <div class="sectionHeader">
+          <h2>Peer Risk</h2>
+          <p id="currentMonthNote">Current month and rolling 6-month peer risk, grouped by size tier.</p>
+        </div>
+        <div id="peerRiskTables"></div>
+      </section>
 
       <section class="panel">
         <div class="sectionHeader">

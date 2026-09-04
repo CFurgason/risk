@@ -228,6 +228,16 @@ input {
   align-items: start;
 }
 
+.peerRiskColumn {
+  min-width: 0;
+}
+
+.peerRiskColumn h3 {
+  margin: 0 0 10px;
+  color: #47535c;
+  font-size: 14px;
+}
+
 .sectionHeader {
   display: flex;
   align-items: baseline;

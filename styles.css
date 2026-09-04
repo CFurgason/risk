@@ -42,17 +42,17 @@ p {
 }
 
 h1 {
-  font-size: 30px;
+  font-size: 33px;
   font-weight: 760;
 }
 
 h2 {
-  font-size: 18px;
+  font-size: 21px;
 }
 
 .eyebrow {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -106,7 +106,7 @@ button,
   border-radius: 8px;
   background: #eef4f7;
   color: #2b4556;
-  font-size: 14px;
+  font-size: 17px;
 }
 
 .statusBand.error {
@@ -128,7 +128,7 @@ label {
   display: grid;
   gap: 6px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -165,7 +165,7 @@ input {
 .tile span {
   display: block;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 750;
   text-transform: uppercase;
 }
@@ -173,7 +173,7 @@ input {
 .scorecards strong {
   display: block;
   margin-top: 6px;
-  font-size: 28px;
+  font-size: 31px;
 }
 
 .scorecards small {
@@ -194,7 +194,7 @@ input {
 .tile strong {
   display: block;
   margin-top: 4px;
-  font-size: 24px;
+  font-size: 27px;
 }
 
 .tile.green {
@@ -237,7 +237,7 @@ input {
 .peerRiskColumn h3 {
   margin: 0 0 10px;
   color: #47535c;
-  font-size: 14px;
+  font-size: 17px;
 }
 
 .sectionHeader {
@@ -251,7 +251,7 @@ input {
 
 .sectionHeader p {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 16px;
 }
 
 .tierBlock {
@@ -267,7 +267,7 @@ input {
   justify-content: space-between;
   margin-bottom: 10px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 750;
   text-transform: uppercase;
 }
@@ -282,7 +282,7 @@ table {
   width: 100%;
   min-width: 1080px;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 16px;
 }
 
 th,
@@ -300,7 +300,7 @@ td:first-child {
 
 th {
   color: #47535c;
-  font-size: 12px;
+  font-size: 15px;
   cursor: pointer;
   user-select: none;
 }
@@ -316,7 +316,7 @@ tr:hover td {
   border-radius: 999px;
   padding: 3px 8px;
   color: #fff;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 750;
 }
 
@@ -372,7 +372,7 @@ tr:hover td {
   display: block;
   margin-top: 3px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 15px;
 }
 
 .trendGrid {
@@ -389,7 +389,7 @@ tr:hover td {
 
 .chartBlock h3 {
   margin: 0 0 8px;
-  font-size: 14px;
+  font-size: 17px;
 }
 
 canvas {
@@ -404,7 +404,7 @@ pre {
   padding: 16px;
   overflow: auto;
   color: #33414a;
-  font-size: 12px;
+  font-size: 15px;
   white-space: pre-wrap;
 }
 

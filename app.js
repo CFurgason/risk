@@ -499,7 +499,8 @@
     const monthly = months.map((start) => {
       const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
       return computeWindow("Trend", start, end, tierMap);
-    });
+    }).filter((windowMetrics) => windowMetrics.rows.length > 0);
+    const activeMonths = monthly.map((windowMetrics) => windowMetrics.start);
     const target = $("trendCharts");
     target.innerHTML = TIERS.map((tier, index) => `
       <div class="chartBlock">
@@ -507,7 +508,7 @@
         <canvas id="chart${index}" width="1200" height="320"></canvas>
       </div>
     `).join("");
-    TIERS.forEach((tier, index) => drawTierChart($(`chart${index}`), tier, months, monthly));
+    TIERS.forEach((tier, index) => drawTierChart($(`chart${index}`), tier, activeMonths, monthly));
   }
 
   function drawTierChart(canvas, tier, months, monthly) {

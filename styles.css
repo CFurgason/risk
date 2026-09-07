@@ -277,6 +277,14 @@ input {
   padding: 16px;
 }
 
+.tierBlock.clickable {
+  cursor: pointer;
+}
+
+.tierBlock.clickable:hover {
+  background: #f8fbfc;
+}
+
 .tierBlock + .tierBlock {
   border-top: 1px solid var(--line);
 }

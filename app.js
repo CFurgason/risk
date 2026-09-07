@@ -31,18 +31,26 @@
   };
 
   const $ = (id) => document.getElementById(id);
+  const isPeerRiskDetailPage = () => document.body.dataset.page === "peer-risk-detail";
 
   document.addEventListener("DOMContentLoaded", () => {
     state.activeTier = readTierFromUrl();
-    $("refreshBtn").addEventListener("click", loadSheet);
-    $("clearTierBtn").addEventListener("click", () => {
+    if (!isPeerRiskDetailPage() && state.activeTier) {
+      navigateToTierDashboard(state.activeTier);
+      return;
+    }
+    $("refreshBtn")?.addEventListener("click", loadSheet);
+    $("allShopsBtn")?.addEventListener("click", () => {
       navigateToTierDashboard(null);
     });
-    $("csvInput").addEventListener("change", handleCsvUpload);
-    ["anchorDate", "recentWeeks", "baselineWeeks", "weakThreshold"].forEach((id) => {
-      $(id).addEventListener("change", () => renderAll());
+    $("clearTierBtn")?.addEventListener("click", () => {
+      navigateToTierDashboard(null);
     });
-    $("anchorDate").valueAsDate = localDate(new Date());
+    $("csvInput")?.addEventListener("change", handleCsvUpload);
+    ["anchorDate", "recentWeeks", "baselineWeeks", "weakThreshold"].forEach((id) => {
+      $(id)?.addEventListener("change", () => renderAll());
+    });
+    if ($("anchorDate")) $("anchorDate").valueAsDate = localDate(new Date());
     loadSheet();
     window.setInterval(loadSheet, REFRESH_MS);
   });
@@ -84,7 +92,7 @@
       ...failures.map((failure) => `${failure.name} failed: ${failure.message}`),
       `Expected local daily CSV path: ${LOCAL_CSV_PATH}`
     ];
-    $("diagnostics").textContent = state.diagnostics.join("\n");
+    if ($("diagnostics")) $("diagnostics").textContent = state.diagnostics.join("\n");
   }
 
   async function loadPublishedCsv() {
@@ -167,7 +175,7 @@
     if (badDateCount > 0) state.diagnostics.push(`${badDateCount} rows skipped because shop or date was missing/unparseable.`);
 
     setStatus(`Loaded ${state.rows.length.toLocaleString()} usable rows from ${sourceName}.`, false);
-    $("lastUpdated").textContent = `Last refresh ${new Date().toLocaleString()}`;
+    if ($("lastUpdated")) $("lastUpdated").textContent = `Last refresh ${new Date().toLocaleString()}`;
     renderAll();
   }
 
@@ -246,7 +254,7 @@
 
   function renderAll() {
     if (!state.rows.length) return;
-    const anchor = parseDate($("anchorDate").value) || localDate(new Date());
+    const anchor = parseDate($("anchorDate")?.value) || localDate(new Date());
     const currentStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
     const nextMonth = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1);
     const rollingStart = new Date(anchor);
@@ -277,11 +285,23 @@
     const displayDecline = filterDeclinesByTier(decline, activeTier, tierMap);
     const tierLabel = activeTier ? `${activeTier} shops` : "All shops";
 
-    $("dashboardTitle").textContent = activeTier ? `${activeTier} Shop Dashboard` : "Shop Risk Monitor";
-    $("drilldownBand").hidden = !activeTier;
-    $("drilldownLabel").textContent = activeTier ? `${activeTier} shop dashboard` : "";
-    $("currentMonthNote").textContent = `${tierLabel}. Current month: ${formatDate(currentStart)} through ${formatDate(addDays(nextMonth, -1))}; rolling window: ${formatDate(rollingStart)} through ${formatDate(anchor)}.`;
-    $("windowLabel").textContent = `${formatDate(currentStart)} current month; ${formatDate(rollingStart)} to ${formatDate(anchor)} rolling window`;
+    if (isPeerRiskDetailPage() && !activeTier) {
+      navigateToTierDashboard("Small");
+      return;
+    }
+
+    if ($("dashboardTitle")) $("dashboardTitle").textContent = activeTier ? `${activeTier} Shop Dashboard` : "Shop Risk Monitor";
+    if ($("peerRiskTitle")) $("peerRiskTitle").textContent = activeTier ? `${activeTier} Shop Peer Risk` : "Peer Risk";
+    if ($("drilldownBand")) $("drilldownBand").hidden = !activeTier;
+    if ($("drilldownLabel")) $("drilldownLabel").textContent = activeTier ? `${activeTier} shop dashboard` : "";
+    if ($("currentMonthNote")) $("currentMonthNote").textContent = `${tierLabel}. Current month: ${formatDate(currentStart)} through ${formatDate(addDays(nextMonth, -1))}; rolling window: ${formatDate(rollingStart)} through ${formatDate(anchor)}.`;
+    if ($("windowLabel")) $("windowLabel").textContent = `${formatDate(currentStart)} current month; ${formatDate(rollingStart)} to ${formatDate(anchor)} rolling window`;
+
+    if (isPeerRiskDetailPage()) {
+      renderPeerRiskTables(displayCurrent.metrics, displayRolling.metrics, activeTier);
+      return;
+    }
+
     renderSummary(displayCurrent, displayRolling, displayDecline);
     renderDecliningList(displayDecline);
     renderPeerRiskTables(displayCurrent.metrics, displayRolling.metrics, activeTier);
@@ -455,8 +475,10 @@
       const rollingContainerId = `rollingTables-${tier}`;
       const currentRows = sortRows(currentContainerId, currentMetrics.filter((item) => item.tier === tier));
       const rollingRows = sortRows(rollingContainerId, rollingMetrics.filter((item) => item.tier === tier));
+      const blockClass = isPeerRiskDetailPage() ? "tierBlock" : "tierBlock clickable";
+      const blockAttrs = isPeerRiskDetailPage() ? "" : ` role="button" tabindex="0" data-tier="${tier}" aria-label="Open ${tier} shop peer risk detail"`;
       return `
-        <div class="tierBlock">
+        <div class="${blockClass}"${blockAttrs}>
           <div class="tierTitle"><span>${tier} shops</span><span>${Math.max(currentRows.length, rollingRows.length)} shops</span></div>
           <div class="peerRiskGrid">
             <div class="peerRiskColumn" data-table-id="${currentContainerId}">
@@ -472,12 +494,22 @@
       `;
     }).join("");
     container.querySelectorAll(".peerRiskColumn th[data-key]").forEach((th) => {
-      th.addEventListener("click", () => {
+      th.addEventListener("click", (event) => {
+        event.stopPropagation();
         const key = th.getAttribute("data-key");
         const containerId = th.closest(".peerRiskColumn").getAttribute("data-table-id");
         const current = state.sort[containerId] || {};
         state.sort[containerId] = { key, dir: current.key === key && current.dir === "asc" ? "desc" : "asc" };
         renderPeerRiskTables(currentMetrics, rollingMetrics, activeTier);
+      });
+    });
+    container.querySelectorAll(".tierBlock[data-tier]").forEach((block) => {
+      const openTier = () => navigateToTierDashboard(block.getAttribute("data-tier"));
+      block.addEventListener("click", openTier);
+      block.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        openTier();
       });
     });
   }
@@ -558,10 +590,9 @@
   }
 
   function navigateToTierDashboard(tier) {
-    const url = new URL(window.location.href);
+    const targetPage = TIERS.includes(tier) ? "peer-risk-detail.html" : "index.html";
+    const url = new URL(targetPage, window.location.href);
     if (TIERS.includes(tier)) url.searchParams.set("tier", tier);
-    else url.searchParams.delete("tier");
-    url.hash = "";
     window.location.href = url.toString();
   }
 

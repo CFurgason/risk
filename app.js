@@ -26,13 +26,19 @@
     columns: [],
     mapping: {},
     diagnostics: [],
-    sort: {}
+    sort: {},
+    activeTier: null
   };
 
   const $ = (id) => document.getElementById(id);
 
   document.addEventListener("DOMContentLoaded", () => {
     $("refreshBtn").addEventListener("click", loadSheet);
+    $("clearTierBtn").addEventListener("click", () => {
+      state.activeTier = null;
+      renderAll();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
     $("csvInput").addEventListener("change", handleCsvUpload);
     ["anchorDate", "recentWeeks", "baselineWeeks", "weakThreshold"].forEach((id) => {
       $(id).addEventListener("change", () => renderAll());
@@ -266,13 +272,35 @@
       item.decline = decline.get(item.shop) || null;
     });
 
-    $("currentMonthNote").textContent = `Current month: ${formatDate(currentStart)} through ${formatDate(addDays(nextMonth, -1))}; rolling window: ${formatDate(rollingStart)} through ${formatDate(anchor)}.`;
+    const activeTier = TIERS.includes(state.activeTier) ? state.activeTier : null;
+    const displayCurrent = filterWindowByTier(current, activeTier, tierMap);
+    const displayRolling = filterWindowByTier(rolling, activeTier, tierMap);
+    const displayDecline = filterDeclinesByTier(decline, activeTier, tierMap);
+    const tierLabel = activeTier ? `${activeTier} shops` : "All shops";
+
+    $("drilldownBand").hidden = !activeTier;
+    $("drilldownLabel").textContent = activeTier ? `${activeTier} shop dashboard` : "";
+    $("currentMonthNote").textContent = `${tierLabel}. Current month: ${formatDate(currentStart)} through ${formatDate(addDays(nextMonth, -1))}; rolling window: ${formatDate(rollingStart)} through ${formatDate(anchor)}.`;
     $("windowLabel").textContent = `${formatDate(currentStart)} current month; ${formatDate(rollingStart)} to ${formatDate(anchor)} rolling window`;
-    renderSummary(current, rolling, decline);
-    renderDecliningList(decline);
-    renderPeerRiskTables(current.metrics, rolling.metrics);
-    renderTrends(anchor, tierMap);
-    renderDiagnostics(current, rolling, tierMap);
+    renderSummary(displayCurrent, displayRolling, displayDecline);
+    renderDecliningList(displayDecline);
+    renderPeerRiskTables(displayCurrent.metrics, displayRolling.metrics, activeTier);
+    renderTrends(anchor, tierMap, activeTier);
+    renderDiagnostics(displayCurrent, displayRolling, tierMap, activeTier);
+  }
+
+  function filterWindowByTier(windowMetrics, tier, tierMap) {
+    if (!tier) return windowMetrics;
+    return {
+      ...windowMetrics,
+      rows: windowMetrics.rows.filter((row) => tierMap.get(row.shop) === tier),
+      metrics: windowMetrics.metrics.filter((item) => item.tier === tier)
+    };
+  }
+
+  function filterDeclinesByTier(decline, tier, tierMap) {
+    if (!tier) return decline;
+    return new Map([...decline.entries()].filter(([shop]) => tierMap.get(shop) === tier));
   }
 
   function deriveSizeTiers(rows) {
@@ -391,7 +419,7 @@
     $("peerShare").textContent = valid.length ? pct(atOrAbove / valid.length) : "--";
     $("avgAbsDeviation").textContent = avgAbs == null ? "--" : fmt(avgAbs);
     $("decliningCount").textContent = decline.size;
-    $("rowsLoaded").textContent = state.rows.length.toLocaleString();
+    $("rowsLoaded").textContent = rolling.rows.length.toLocaleString();
 
     const counts = Object.fromEntries(STATUS_ORDER.map((status) => [status, 0]));
     current.metrics.forEach((item) => counts[item.status] += 1);
@@ -419,9 +447,10 @@
     `).join("");
   }
 
-  function renderPeerRiskTables(currentMetrics, rollingMetrics) {
+  function renderPeerRiskTables(currentMetrics, rollingMetrics, activeTier) {
     const container = $("peerRiskTables");
-    container.innerHTML = TIERS.map((tier) => {
+    const tiers = activeTier ? [activeTier] : TIERS;
+    container.innerHTML = tiers.map((tier) => {
       const currentContainerId = `currentTables-${tier}`;
       const rollingContainerId = `rollingTables-${tier}`;
       const currentRows = sortRows(currentContainerId, currentMetrics.filter((item) => item.tier === tier));
@@ -448,7 +477,7 @@
         const containerId = th.closest(".peerRiskColumn").getAttribute("data-table-id");
         const current = state.sort[containerId] || {};
         state.sort[containerId] = { key, dir: current.key === key && current.dir === "asc" ? "desc" : "asc" };
-        renderPeerRiskTables(currentMetrics, rollingMetrics);
+        renderPeerRiskTables(currentMetrics, rollingMetrics, activeTier);
       });
     });
   }
@@ -491,7 +520,7 @@
     return rows.sort((a, b) => compareValue(a[sort.key], b[sort.key]) * direction);
   }
 
-  function renderTrends(anchor, tierMap) {
+  function renderTrends(anchor, tierMap, activeTier) {
     const months = [];
     for (let i = 5; i >= 0; i -= 1) {
       months.push(new Date(anchor.getFullYear(), anchor.getMonth() - i, 1));
@@ -502,13 +531,27 @@
     }).filter((windowMetrics) => windowMetrics.rows.length > 0);
     const activeMonths = monthly.map((windowMetrics) => windowMetrics.start);
     const target = $("trendCharts");
-    target.innerHTML = TIERS.map((tier, index) => `
-      <div class="chartBlock">
+    const tiers = activeTier ? [activeTier] : TIERS;
+    target.innerHTML = tiers.map((tier, index) => `
+      <div class="chartBlock clickable" role="button" tabindex="0" data-tier="${tier}" aria-label="Open ${tier} shop dashboard">
         <h3>${tier}</h3>
         <canvas id="chart${index}" class="trendCanvas" width="1200" height="680"></canvas>
       </div>
     `).join("");
-    TIERS.forEach((tier, index) => drawTierChart($(`chart${index}`), tier, activeMonths, monthly));
+    tiers.forEach((tier, index) => drawTierChart($(`chart${index}`), tier, activeMonths, monthly));
+    target.querySelectorAll(".chartBlock[data-tier]").forEach((block) => {
+      const openTier = () => {
+        state.activeTier = block.getAttribute("data-tier");
+        renderAll();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      };
+      block.addEventListener("click", openTier);
+      block.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        openTier();
+      });
+    });
   }
 
   function drawTierChart(canvas, tier, months, monthly) {
@@ -567,11 +610,12 @@
     }
   }
 
-  function renderDiagnostics(current, rolling, tierMap) {
+  function renderDiagnostics(current, rolling, tierMap, activeTier) {
     const tierCounts = countValues([...tierMap.values()]);
     const lines = [
       ...state.diagnostics,
       "",
+      `Active dashboard: ${activeTier ? `${activeTier} shops` : "All shops"}`,
       `Rows in current-month window: ${current.rows.length}`,
       `Rows in rolling-6-month window: ${rolling.rows.length}`,
       `Size-tier shop counts: ${JSON.stringify(tierCounts)}`,

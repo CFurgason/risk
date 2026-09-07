@@ -115,6 +115,25 @@ button,
   color: #8b2a20;
 }
 
+.drilldownBand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid #b7d2e5;
+  border-radius: 8px;
+  background: #eaf5fb;
+  color: #21475f;
+  font-size: 20px;
+  font-weight: 750;
+}
+
+.drilldownBand[hidden] {
+  display: none;
+}
+
 .controls {
   align-items: end;
   padding: 16px;
@@ -387,6 +406,15 @@ tr:hover td {
   padding: 12px;
 }
 
+.chartBlock.clickable {
+  cursor: pointer;
+}
+
+.chartBlock.clickable:hover {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(39, 109, 159, 0.12);
+}
+
 .chartBlock h3 {
   margin: 0 0 8px;
   font-size: 20px;
@@ -421,6 +449,7 @@ pre {
 @media (max-width: 900px) {
   .topbar,
   .sectionHeader,
+  .drilldownBand,
   .statusBand {
     align-items: stretch;
     flex-direction: column;

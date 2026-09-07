@@ -535,6 +535,7 @@
 
     ctx.strokeStyle = "#d9e0e4";
     ctx.lineWidth = 1;
+    ctx.font = "15px Segoe UI, Arial";
     [-1, 0, 1].forEach((tick) => {
       ctx.beginPath();
       ctx.moveTo(pad.left, y(tick));
@@ -558,7 +559,7 @@
     });
 
     ctx.fillStyle = "#47535c";
-    ctx.font = "12px Segoe UI, Arial";
+    ctx.font = "15px Segoe UI, Arial";
     months.forEach((month, i) => ctx.fillText(`${MONTH_NAMES[month.getMonth()]} ${String(month.getFullYear()).slice(2)}`, x(i) - 20, h - 10));
     if (!shops.length) {
       ctx.fillStyle = "#65717b";

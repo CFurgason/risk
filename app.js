@@ -505,7 +505,7 @@
     target.innerHTML = TIERS.map((tier, index) => `
       <div class="chartBlock">
         <h3>${tier}</h3>
-        <canvas id="chart${index}" width="1200" height="320"></canvas>
+        <canvas id="chart${index}" width="1200" height="520"></canvas>
       </div>
     `).join("");
     TIERS.forEach((tier, index) => drawTierChart($(`chart${index}`), tier, activeMonths, monthly));

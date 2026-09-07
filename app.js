@@ -33,11 +33,10 @@
   const $ = (id) => document.getElementById(id);
 
   document.addEventListener("DOMContentLoaded", () => {
+    state.activeTier = readTierFromUrl();
     $("refreshBtn").addEventListener("click", loadSheet);
     $("clearTierBtn").addEventListener("click", () => {
-      state.activeTier = null;
-      renderAll();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      navigateToTierDashboard(null);
     });
     $("csvInput").addEventListener("change", handleCsvUpload);
     ["anchorDate", "recentWeeks", "baselineWeeks", "weakThreshold"].forEach((id) => {
@@ -278,6 +277,7 @@
     const displayDecline = filterDeclinesByTier(decline, activeTier, tierMap);
     const tierLabel = activeTier ? `${activeTier} shops` : "All shops";
 
+    $("dashboardTitle").textContent = activeTier ? `${activeTier} Shop Dashboard` : "Shop Risk Monitor";
     $("drilldownBand").hidden = !activeTier;
     $("drilldownLabel").textContent = activeTier ? `${activeTier} shop dashboard` : "";
     $("currentMonthNote").textContent = `${tierLabel}. Current month: ${formatDate(currentStart)} through ${formatDate(addDays(nextMonth, -1))}; rolling window: ${formatDate(rollingStart)} through ${formatDate(anchor)}.`;
@@ -541,9 +541,7 @@
     tiers.forEach((tier, index) => drawTierChart($(`chart${index}`), tier, activeMonths, monthly));
     target.querySelectorAll(".chartBlock[data-tier]").forEach((block) => {
       const openTier = () => {
-        state.activeTier = block.getAttribute("data-tier");
-        renderAll();
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        navigateToTierDashboard(block.getAttribute("data-tier"));
       };
       block.addEventListener("click", openTier);
       block.addEventListener("keydown", (event) => {
@@ -552,6 +550,19 @@
         openTier();
       });
     });
+  }
+
+  function readTierFromUrl() {
+    const tier = new URLSearchParams(window.location.search).get("tier");
+    return TIERS.includes(tier) ? tier : null;
+  }
+
+  function navigateToTierDashboard(tier) {
+    const url = new URL(window.location.href);
+    if (TIERS.includes(tier)) url.searchParams.set("tier", tier);
+    else url.searchParams.delete("tier");
+    url.hash = "";
+    window.location.href = url.toString();
   }
 
   function drawTierChart(canvas, tier, months, monthly) {

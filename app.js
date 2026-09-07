@@ -298,6 +298,8 @@
     if ($("windowLabel")) $("windowLabel").textContent = `${formatDate(currentStart)} current month; ${formatDate(rollingStart)} to ${formatDate(anchor)} rolling window`;
 
     if (isPeerRiskDetailPage()) {
+      renderSummary(displayCurrent, displayRolling, displayDecline);
+      renderDecliningList(displayDecline);
       renderPeerRiskTables(displayCurrent.metrics, displayRolling.metrics, activeTier);
       return;
     }
@@ -483,11 +485,11 @@
           <div class="peerRiskGrid">
             <div class="peerRiskColumn" data-table-id="${currentContainerId}">
               <h3>Current Month</h3>
-              ${currentRows.length ? tableHtml(currentContainerId, currentRows) : '<p class="empty">No shops in this tier.</p>'}
+              ${currentRows.length ? tableHtml(currentContainerId, currentRows, tier) : '<p class="empty">No shops in this tier.</p>'}
             </div>
             <div class="peerRiskColumn" data-table-id="${rollingContainerId}">
               <h3>Rolling 6-Month</h3>
-              ${rollingRows.length ? tableHtml(rollingContainerId, rollingRows) : '<p class="empty">No shops in this tier.</p>'}
+              ${rollingRows.length ? tableHtml(rollingContainerId, rollingRows, tier) : '<p class="empty">No shops in this tier.</p>'}
             </div>
           </div>
         </div>
@@ -512,9 +514,22 @@
         openTier();
       });
     });
+    container.querySelectorAll(".shopTierLink[data-tier]").forEach((cell) => {
+      const openTier = () => navigateToTierDashboard(cell.getAttribute("data-tier"));
+      cell.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openTier();
+      });
+      cell.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        event.stopPropagation();
+        openTier();
+      });
+    });
   }
 
-  function tableHtml(containerId, rows) {
+  function tableHtml(containerId, rows, tier) {
     const headers = [
       ["shop", "Shop"], ["status", "Risk"], ["connectRate", "Connect Rate"],
       ["connectZ", "Connect Z"], ["revenue", "Revenue"], ["revenuePerCall", "Rev / Call"],
@@ -528,7 +543,7 @@
           <tbody>
             ${rows.map((row) => `
                 <tr>
-                <td>${escapeHtml(row.shop)}</td>
+                <td class="${isPeerRiskDetailPage() ? "" : "shopTierLink"}" ${isPeerRiskDetailPage() ? "" : `role="button" tabindex="0" data-tier="${tier}" aria-label="Open ${tier} shop peer risk detail"`}>${escapeHtml(row.shop)}</td>
                 <td><span class="status ${statusClass(row.status)}">${row.status}</span></td>
                 <td>${row.connectRate == null ? "--" : pct(row.connectRate)}</td>
                 <td>${fmt(row.connectZ)}</td>

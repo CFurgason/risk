@@ -47,6 +47,46 @@
         </label>
       </section>
 
+      <section class="scorecards" aria-label="Summary scorecards">
+        <article>
+          <span>At or Above Peers</span>
+          <strong id="peerShare">--</strong>
+          <small>Green + Yellow share, rolling 6 months</small>
+        </article>
+        <article>
+          <span>Average Abs. Deviation</span>
+          <strong id="avgAbsDeviation">--</strong>
+          <small>Composite z-score distance</small>
+        </article>
+        <article>
+          <span>Currently Declining</span>
+          <strong id="decliningCount">--</strong>
+          <small>2+ consecutive weak weeks</small>
+        </article>
+        <article>
+          <span>Rows Loaded</span>
+          <strong id="rowsLoaded">--</strong>
+          <small id="windowLabel">Current month and trailing 6 months</small>
+        </article>
+      </section>
+
+      <section class="riskTiles" aria-label="Current month risk status counts">
+        <article class="tile green"><span>Green</span><strong id="greenCount">0</strong></article>
+        <article class="tile yellow"><span>Yellow</span><strong id="yellowCount">0</strong></article>
+        <article class="tile orange"><span>Orange</span><strong id="orangeCount">0</strong></article>
+        <article class="tile red"><span>Red</span><strong id="redCount">0</strong></article>
+        <article class="tile neutral"><span>No Revenue</span><strong id="noRevenueCount">0</strong></article>
+        <article class="tile neutral"><span>Insufficient</span><strong id="insufficientCount">0</strong></article>
+      </section>
+
+      <section class="decliningPanel">
+        <div class="sectionHeader">
+          <h2>Shops Currently Declining</h2>
+          <p>Self-relative trend signal, separate from peer risk status.</p>
+        </div>
+        <div id="decliningList" class="decliningList"></div>
+      </section>
+
       <section class="panel">
         <div class="sectionHeader">
           <h2 id="peerRiskTitle">Peer Risk</h2>

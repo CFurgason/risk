@@ -325,6 +325,14 @@ td:first-child {
   text-align: left;
 }
 
+.shopTierLink {
+  color: var(--blue);
+  cursor: pointer;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 th {
   color: #47535c;
   font-size: 18px;

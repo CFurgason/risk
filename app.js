@@ -505,7 +505,7 @@
     target.innerHTML = TIERS.map((tier, index) => `
       <div class="chartBlock">
         <h3>${tier}</h3>
-        <canvas id="chart${index}" width="1200" height="520"></canvas>
+        <canvas id="chart${index}" class="trendCanvas" width="1200" height="680"></canvas>
       </div>
     `).join("");
     TIERS.forEach((tier, index) => drawTierChart($(`chart${index}`), tier, activeMonths, monthly));
@@ -518,7 +518,7 @@
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, w, h);
-    const pad = { left: 48, right: 18, top: 18, bottom: 34 };
+    const pad = { left: 48, right: 18, top: 18, bottom: 54 };
     const valuesByShop = new Map();
     monthly.forEach((windowMetrics, monthIndex) => {
       windowMetrics.metrics.filter((item) => item.tier === tier && item.composite != null).forEach((item) => {

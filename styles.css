@@ -398,6 +398,11 @@ canvas {
   display: block;
 }
 
+.trendCanvas {
+  height: 560px;
+  min-height: 560px;
+}
+
 .diagnostics pre,
 pre {
   margin: 0;

@@ -74,7 +74,7 @@ main {
 .actions,
 .controls,
 .scorecards,
-.riskTiles {
+.reviewTiles {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
@@ -272,7 +272,7 @@ input {
   font-weight: 600;
 }
 
-.riskTiles {
+.reviewTiles {
   display: grid;
   grid-template-columns: repeat(6, minmax(120px, 1fr));
   gap: 14px;
@@ -350,18 +350,18 @@ input {
   box-shadow: var(--shadow-soft);
 }
 
-.peerRiskGrid {
+.peerReviewGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
   align-items: start;
 }
 
-.peerRiskColumn {
+.peerReviewColumn {
   min-width: 0;
 }
 
-.peerRiskColumn h3 {
+.peerReviewColumn h3 {
   margin: 0 0 10px;
   color: #47535c;
   font-size: 20px;
@@ -584,11 +584,11 @@ pre {
   }
 
   .scorecards,
-  .riskTiles {
+  .reviewTiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .peerRiskGrid {
+  .peerReviewGrid {
     grid-template-columns: 1fr;
   }
 }

@@ -3,16 +3,17 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Shop Review Monitor</title>
+    <title>Peer Review Detail</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body data-page="peer-review-detail">
     <header class="topbar">
       <div>
         <p class="eyebrow">Daily-updated Google Sheet source</p>
-        <h1 id="dashboardTitle">Shop Review Monitor</h1>
+        <h1 id="dashboardTitle">Peer Review Detail</h1>
       </div>
       <div class="actions">
+        <button id="allShopsBtn" type="button">All Shops</button>
         <button id="refreshBtn" type="button" title="Refresh sheet data">Refresh</button>
         <label class="fileBtn" title="Use when browser access to the sheet is blocked">
           Manual CSV
@@ -27,12 +28,7 @@
         <span id="lastUpdated"></span>
       </section>
 
-      <section class="drilldownBand" id="drilldownBand" hidden>
-        <span id="drilldownLabel"></span>
-        <button id="clearTierBtn" type="button">All Shops</button>
-      </section>
-
-      <section class="controls" aria-label="Dashboard controls">
+      <section class="controls" aria-label="Detail controls">
         <label>
           Anchor date
           <input id="anchorDate" type="date" />
@@ -93,26 +89,10 @@
 
       <section class="panel">
         <div class="sectionHeader">
-          <h2>Peer Review</h2>
-          <p id="currentMonthNote">Current month and rolling 6-month peer review, grouped by size tier.</p>
+          <h2 id="peerReviewTitle">Peer Review</h2>
+          <p id="currentMonthNote">Current month and rolling 6-month peer review.</p>
         </div>
         <div id="peerReviewTables"></div>
-      </section>
-
-      <section class="panel">
-        <div class="sectionHeader">
-          <h2>Monthly Composite Trends</h2>
-          <p>Composite z-score by shop, grouped by size tier.</p>
-        </div>
-        <div id="trendCharts" class="trendGrid"></div>
-      </section>
-
-      <section class="panel diagnostics">
-        <div class="sectionHeader">
-          <h2>Diagnostics</h2>
-          <p>Column matching, source access, and calculation warnings.</p>
-        </div>
-        <pre id="diagnostics"></pre>
       </section>
     </main>
 

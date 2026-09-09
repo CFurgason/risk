@@ -5,7 +5,7 @@
   const PUBLISHED_GVIZ_URL = `https://docs.google.com/spreadsheets/d/e/${PUBLISHED_ID}/gviz/tq?gid=${GID}`;
   const DIRECT_GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}`;
   const PUBLISHED_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRy-PgUzwkSJEPM7qGAou8yec7HoLZ3N31rTmtyzK6CIl5U0VQqjFh-nD9kfy8MlNGY2LyUSKUdYNYD/pub?gid=0&single=true&output=csv";
-  const LOCAL_CSV_PATH = "shop-risk-data.csv";
+  const LOCAL_CSV_PATH = "shop-review-data.csv";
   const REFRESH_MS = 15 * 60 * 1000;
   const TIERS = ["Small", "Medium", "Large"];
   const STATUS_ORDER = ["Green", "Yellow", "Orange", "Red", "No Revenue Activity", "Insufficient Data"];
@@ -31,11 +31,11 @@
   };
 
   const $ = (id) => document.getElementById(id);
-  const isPeerRiskDetailPage = () => document.body.dataset.page === "peer-risk-detail";
+  const isPeerReviewDetailPage = () => document.body.dataset.page === "peer-review-detail";
 
   document.addEventListener("DOMContentLoaded", () => {
     state.activeTier = readTierFromUrl();
-    if (!isPeerRiskDetailPage() && state.activeTier) {
+    if (!isPeerReviewDetailPage() && state.activeTier) {
       navigateToTierDashboard(state.activeTier);
       return;
     }
@@ -87,7 +87,7 @@
       }
     }
 
-    setStatus("No live data loaded. Check the published Google Sheet URL or place shop-risk-data.csv next to this dashboard.", true);
+    setStatus("No live data loaded. Check the published Google Sheet URL or place shop-review-data.csv next to this dashboard.", true);
     state.diagnostics = [
       ...failures.map((failure) => `${failure.name} failed: ${failure.message}`),
       `Expected local daily CSV path: ${LOCAL_CSV_PATH}`
@@ -108,7 +108,7 @@
   function loadGoogleSheet(baseUrl, label) {
     return new Promise((resolve, reject) => {
       setStatus(`Loading latest data from ${label}...`, false);
-      const callbackName = "__shopRiskSheet_" + Date.now();
+      const callbackName = "__shopReviewSheet_" + Date.now();
       const script = document.createElement("script");
       const timeout = window.setTimeout(() => {
         cleanup();
@@ -285,28 +285,28 @@
     const displayDecline = filterDeclinesByTier(decline, activeTier, tierMap);
     const tierLabel = activeTier ? `${activeTier} shops` : "All shops";
 
-    if (isPeerRiskDetailPage() && !activeTier) {
+    if (isPeerReviewDetailPage() && !activeTier) {
       navigateToTierDashboard("Small");
       return;
     }
 
-    if ($("dashboardTitle")) $("dashboardTitle").textContent = activeTier ? `${activeTier} Shop Dashboard` : "Shop Risk Monitor";
-    if ($("peerRiskTitle")) $("peerRiskTitle").textContent = activeTier ? `${activeTier} Shop Peer Risk` : "Peer Risk";
+    if ($("dashboardTitle")) $("dashboardTitle").textContent = activeTier ? `${activeTier} Shop Dashboard` : "Shop Review Monitor";
+    if ($("peerReviewTitle")) $("peerReviewTitle").textContent = activeTier ? `${activeTier} Shop Peer Review` : "Peer Review";
     if ($("drilldownBand")) $("drilldownBand").hidden = !activeTier;
     if ($("drilldownLabel")) $("drilldownLabel").textContent = activeTier ? `${activeTier} shop dashboard` : "";
     if ($("currentMonthNote")) $("currentMonthNote").textContent = `${tierLabel}. Current month: ${formatDate(currentStart)} through ${formatDate(addDays(nextMonth, -1))}; rolling window: ${formatDate(rollingStart)} through ${formatDate(anchor)}.`;
     if ($("windowLabel")) $("windowLabel").textContent = `${formatDate(currentStart)} current month; ${formatDate(rollingStart)} to ${formatDate(anchor)} rolling window`;
 
-    if (isPeerRiskDetailPage()) {
+    if (isPeerReviewDetailPage()) {
       renderSummary(displayCurrent, displayRolling, displayDecline);
       renderDecliningList(displayDecline);
-      renderPeerRiskTables(displayCurrent.metrics, displayRolling.metrics, activeTier);
+      renderPeerReviewTables(displayCurrent.metrics, displayRolling.metrics, activeTier);
       return;
     }
 
     renderSummary(displayCurrent, displayRolling, displayDecline);
     renderDecliningList(displayDecline);
-    renderPeerRiskTables(displayCurrent.metrics, displayRolling.metrics, activeTier);
+    renderPeerReviewTables(displayCurrent.metrics, displayRolling.metrics, activeTier);
     renderTrends(anchor, tierMap, activeTier);
     renderDiagnostics(displayCurrent, displayRolling, tierMap, activeTier);
   }
@@ -364,7 +364,7 @@
 
     baseMetrics.forEach((item) => {
       item.composite = item.connectZ == null || item.revenueZ == null ? null : (item.connectZ + item.revenueZ) / 2;
-      item.status = riskStatus(item);
+      item.status = reviewStatus(item);
     });
 
     return { label, start, end, rows, metrics: baseMetrics };
@@ -380,7 +380,7 @@
     });
   }
 
-  function riskStatus(item) {
+  function reviewStatus(item) {
     if (item.revenueRecords === 0) return "No Revenue Activity";
     if (item.connectZ == null || item.revenueZ == null || item.composite == null) return "Insufficient Data";
     if (item.connectZ < 0 && item.revenueZ < 0 && item.composite <= -0.5) return "Red";
@@ -469,25 +469,25 @@
     `).join("");
   }
 
-  function renderPeerRiskTables(currentMetrics, rollingMetrics, activeTier) {
-    const container = $("peerRiskTables");
+  function renderPeerReviewTables(currentMetrics, rollingMetrics, activeTier) {
+    const container = $("peerReviewTables");
     const tiers = activeTier ? [activeTier] : TIERS;
     container.innerHTML = tiers.map((tier) => {
       const currentContainerId = `currentTables-${tier}`;
       const rollingContainerId = `rollingTables-${tier}`;
       const currentRows = sortRows(currentContainerId, currentMetrics.filter((item) => item.tier === tier));
       const rollingRows = sortRows(rollingContainerId, rollingMetrics.filter((item) => item.tier === tier));
-      const blockClass = isPeerRiskDetailPage() ? "tierBlock" : "tierBlock clickable";
-      const blockAttrs = isPeerRiskDetailPage() ? "" : ` role="button" tabindex="0" data-tier="${tier}" aria-label="Open ${tier} shop peer risk detail"`;
+      const blockClass = isPeerReviewDetailPage() ? "tierBlock" : "tierBlock clickable";
+      const blockAttrs = isPeerReviewDetailPage() ? "" : ` role="button" tabindex="0" data-tier="${tier}" aria-label="Open ${tier} shop peer review detail"`;
       return `
         <div class="${blockClass}"${blockAttrs}>
           <div class="tierTitle"><span>${tier} shops</span><span>${Math.max(currentRows.length, rollingRows.length)} shops</span></div>
-          <div class="peerRiskGrid">
-            <div class="peerRiskColumn" data-table-id="${currentContainerId}">
+          <div class="peerReviewGrid">
+            <div class="peerReviewColumn" data-table-id="${currentContainerId}">
               <h3>Current Month</h3>
               ${currentRows.length ? tableHtml(currentContainerId, currentRows, tier) : '<p class="empty">No shops in this tier.</p>'}
             </div>
-            <div class="peerRiskColumn" data-table-id="${rollingContainerId}">
+            <div class="peerReviewColumn" data-table-id="${rollingContainerId}">
               <h3>Rolling 6-Month</h3>
               ${rollingRows.length ? tableHtml(rollingContainerId, rollingRows, tier) : '<p class="empty">No shops in this tier.</p>'}
             </div>
@@ -495,14 +495,14 @@
         </div>
       `;
     }).join("");
-    container.querySelectorAll(".peerRiskColumn th[data-key]").forEach((th) => {
+    container.querySelectorAll(".peerReviewColumn th[data-key]").forEach((th) => {
       th.addEventListener("click", (event) => {
         event.stopPropagation();
         const key = th.getAttribute("data-key");
-        const containerId = th.closest(".peerRiskColumn").getAttribute("data-table-id");
+        const containerId = th.closest(".peerReviewColumn").getAttribute("data-table-id");
         const current = state.sort[containerId] || {};
         state.sort[containerId] = { key, dir: current.key === key && current.dir === "asc" ? "desc" : "asc" };
-        renderPeerRiskTables(currentMetrics, rollingMetrics, activeTier);
+        renderPeerReviewTables(currentMetrics, rollingMetrics, activeTier);
       });
     });
     container.querySelectorAll(".tierBlock[data-tier]").forEach((block) => {
@@ -531,7 +531,7 @@
 
   function tableHtml(containerId, rows, tier) {
     const headers = [
-      ["shop", "Shop"], ["status", "Risk"], ["connectRate", "Connect Rate"],
+      ["shop", "Shop"], ["status", "Review"], ["connectRate", "Connect Rate"],
       ["connectZ", "Connect Z"], ["revenue", "Revenue"], ["revenuePerCall", "Rev / Call"],
       ["revenueZ", "Revenue Z"], ["composite", "Composite"], ["compositeDelta", "Current - 6M"],
       ["decline", "Decline"]
@@ -543,7 +543,7 @@
           <tbody>
             ${rows.map((row) => `
                 <tr>
-                <td class="${isPeerRiskDetailPage() ? "" : "shopTierLink"}" ${isPeerRiskDetailPage() ? "" : `role="button" tabindex="0" data-tier="${tier}" aria-label="Open ${tier} shop peer risk detail"`}>${escapeHtml(row.shop)}</td>
+                <td class="${isPeerReviewDetailPage() ? "" : "shopTierLink"}" ${isPeerReviewDetailPage() ? "" : `role="button" tabindex="0" data-tier="${tier}" aria-label="Open ${tier} shop peer review detail"`}>${escapeHtml(row.shop)}</td>
                 <td><span class="status ${statusClass(row.status)}">${row.status}</span></td>
                 <td>${row.connectRate == null ? "--" : pct(row.connectRate)}</td>
                 <td>${fmt(row.connectZ)}</td>
@@ -605,7 +605,7 @@
   }
 
   function navigateToTierDashboard(tier) {
-    const targetPage = TIERS.includes(tier) ? "peer-risk-detail.html" : "index.html";
+    const targetPage = TIERS.includes(tier) ? "peer-review-detail.html" : "index.html";
     const url = new URL(targetPage, window.location.href);
     if (TIERS.includes(tier)) url.searchParams.set("tier", tier);
     window.location.href = url.toString();
@@ -676,7 +676,7 @@
       `Rows in current-month window: ${current.rows.length}`,
       `Rows in rolling-6-month window: ${rolling.rows.length}`,
       `Size-tier shop counts: ${JSON.stringify(tierCounts)}`,
-      "Risk priority: No Revenue Activity > Insufficient Data > Red > Orange > Yellow > Green",
+      "Review priority: No Revenue Activity > Insufficient Data > Red > Orange > Yellow > Green",
       "Composite is null when either z-score is undefined."
     ];
     $("diagnostics").textContent = lines.join("\n");
